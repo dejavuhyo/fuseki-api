@@ -13,6 +13,7 @@ public class Select {
         // SPARQL
         String queryString = """
                 PREFIX ex: <http://example.org/>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                 SELECT ?subject ?label
                 WHERE {
                   ?subject rdfs:label ?label

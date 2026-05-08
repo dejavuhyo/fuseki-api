@@ -1,21 +1,22 @@
 package com.example.fuseki.api;
 
-import org.apache.jena.rdfconnection.RDFConnection;
-import org.apache.jena.rdfconnection.RDFConnectionRemote;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.sparql.exec.http.GSP;
 
 public class Update {
     public static void main(String[] args) {
-        String datasetURL = "http://localhost:3030/myDataset";
+        // GSP 엔드포인트는 /data를 사용
+        String gspEndpoint = "http://localhost:3030/my_dataset/data";
 
-        String updateString = "INSERT DATA { <http://example/s> <http://example/p> 'Hello Jena 6' }";
+        // 파일 읽기
+        Model model = RDFDataMgr.loadModel("ontology.ttl");
 
-        try (RDFConnection conn = RDFConnectionRemote.service(datasetURL).build()) {
-            conn.update(updateString);
-            System.out.println("데이터 업데이트 성공!");
+        // GSP 빌더 사용 (Jena 6 정석)
+        GSP.service(gspEndpoint)
+                .defaultGraph()
+                .PUT(model.getGraph()); // POST는 추가, PUT은 덮어쓰기
 
-        } catch (Exception e) {
-            System.err.println("쿼리 실행 중 오류: " + e.getMessage());
-            e.printStackTrace();
-        }
+        System.out.println("색인 완료");
     }
 }

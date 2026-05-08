@@ -1,38 +1,51 @@
 package com.example.fuseki.api;
 
+import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
-import org.apache.jena.rdfconnection.RDFConnection;
-import org.apache.jena.rdfconnection.RDFConnectionRemote;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.RDFNode;
 
 public class Select {
     public static void main(String[] args) {
-        String datasetURL = "http://localhost:3030/myDataset";
+        // Fuseki 서버 주소
+        String serviceEndpoint = "http://localhost:3030/my_dataset/sparql";
 
-        String queryString =
-                "SELECT ?s ?p ?o " +
-                        "WHERE { ?s ?p ?o } " +
-                        "LIMIT 10";
+        // SPARQL
+        String queryString = """
+                PREFIX ex: <http://example.org/>
+                SELECT ?subject ?label
+                WHERE {
+                  ?subject rdfs:label ?label
+                }
+                LIMIT 20
+                """;
 
-        try (RDFConnection conn = RDFConnectionRemote.service(datasetURL).build()) {
+        try (QueryExecution qexec = QueryExecution.service(serviceEndpoint)
+                .query(queryString)
+                // Fuseki 서버에 아이디/패스워드 설정한 경우
+//                .httpClient(java.net.http.HttpClient.newBuilder()
+//                        .authenticator(new java.net.Authenticator() {
+//                            protected java.net.PasswordAuthentication getPasswordAuthentication() {
+//                                return new java.net.PasswordAuthentication("admin", "password".toCharArray());
+//                            }
+//                        }).build())
+                .build()) {
 
-            System.out.println("--- 쿼리 실행 결과 ---");
+            // SELECT 결과 가져오기
+            ResultSet results = qexec.execSelect();
 
-            conn.querySelect(queryString, (QuerySolution row) -> {
-                // 각 행(Row)을 처리하는 람다식
-                System.out.println("Subject: " + row.get("s"));
-                System.out.println("Predicate: " + row.get("p"));
-                System.out.println("Object: " + row.get("o"));
-                System.out.println("--------------------");
-            });
+            // 결과 루프
+            while (results.hasNext()) {
+                QuerySolution qs = results.nextSolution();
 
-            /* 표 형식으로 한꺼번에 출력
-            ResultSet rs = conn.query(queryString).execSelect();
-            ResultSetFormatter.out(System.out, rs);
-            */
+                // 리소스(URI)와 리터럴(값) 구분해서 가져오기
+                RDFNode subject = qs.get("subject");
+                RDFNode label = qs.get("label");
 
+                System.out.println("subject: " + subject + " | label: " + label);
+            }
         } catch (Exception e) {
-            System.err.println("쿼리 실행 중 오류: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Fuseki 연결 실패: " + e.getMessage());
         }
     }
 }
